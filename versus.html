@@ -32,7 +32,6 @@
       display: flex;
       justify-content: space-between;
       width: 80%;
-      transition: background-color 0.3s ease;
     }
 
     #backBtn {
@@ -68,12 +67,11 @@
   <div id="hud">
     <div>Jogador 1 (W/S) - 🏅 <span id="score1">0</span></div>
     <div>Modo 2 Jogadores</div>
-    <div>Jogador 2 (↑/↓) - 🏅 <span id="score2">0</span></div>
+    <div>Jogador 2 (I/K) - 🏅 <span id="score2">0</span></div>
   </div>
 
   <canvas id="gameCanvas"></canvas>
-  <button id="bgmToggle">
-  </button>
+  <button id="bgmToggle"></button>
   <button id="backBtn">Voltar para fases</button>
 
   <audio id="somRaquete" src="assets/raquete.mp3"></audio>
@@ -95,7 +93,6 @@
     const backBtn = document.getElementById('backBtn');
 
     backBtn.onclick = () => window.location.href = 'fases.html';
-
 
     function ajustarTamanho() {
       canvas.width = window.innerWidth;
@@ -136,7 +133,7 @@
         this.x = x;
         this.y = y;
         this.raio = raio;
-        this.speedX = 5;
+        this.speedX = 7;
         this.speedY = 4 * (Math.random() > 0.5 ? 1 : -1);
       }
 
@@ -168,8 +165,8 @@
           direita: canvas.width - this.margem
         };
 
-        this.raquete1 = new Raquete(80, canvas.height / 2 - 65, -Math.PI / 6);   // W/S
-        this.raquete2 = new Raquete(canvas.width - 120, canvas.height / 2 - 65, Math.PI / 6); // ↑/↓
+        this.raquete1 = new Raquete(80, canvas.height / 2 - 65, -Math.PI / 6);
+        this.raquete2 = new Raquete(canvas.width - 120, canvas.height / 2 - 65, Math.PI / 6);
 
         this.bola = new Bola(canvas.width / 2, canvas.height / 2, 10);
 
@@ -179,22 +176,27 @@
         this.teclas = {
           w: false,
           s: false,
-          ArrowUp: false,
-          ArrowDown: false
+          i: false,
+          k: false
         };
 
         this.score1 = 0;
         this.score2 = 0;
 
-        window.addEventListener('keydown', e => this.teclas[e.key] = true);
-        window.addEventListener('keyup', e => this.teclas[e.key] = false);
+        window.addEventListener('keydown', e => {
+          if (this.teclas.hasOwnProperty(e.key)) this.teclas[e.key] = true;
+        });
+
+        window.addEventListener('keyup', e => {
+          if (this.teclas.hasOwnProperty(e.key)) this.teclas[e.key] = false;
+        });
       }
 
       atualizar() {
         if (this.teclas['w']) this.raquete1.move(-1, this.limitesQuadra);
         if (this.teclas['s']) this.raquete1.move(1, this.limitesQuadra);
-        if (this.teclas['ArrowUp']) this.raquete2.move(-1, this.limitesQuadra);
-        if (this.teclas['ArrowDown']) this.raquete2.move(1, this.limitesQuadra);
+        if (this.teclas['i']) this.raquete2.move(-1, this.limitesQuadra);
+        if (this.teclas['k']) this.raquete2.move(1, this.limitesQuadra);
 
         this.bola.update(this.limitesQuadra);
 
@@ -232,7 +234,6 @@
           this.bola = new Bola(canvas.width / 2, canvas.height / 2, 10);
         }
 
-        // Fim de jogo (exemplo: até 7 pontos)
         if (this.score1 >= 7 || this.score2 >= 7) {
           bgm.pause();
           const vencedor = this.score1 > this.score2 ? "Jogador 1" : "Jogador 2";
@@ -263,7 +264,10 @@
           new Promise(res => this.raquete1.img.onload = res),
           new Promise(res => this.raquete2.img.onload = res),
           new Promise(res => this.quadraImg.onload = res)
-        ]).then(() => this.loop());
+        ]).then(() => {
+          bgm.play();
+          this.loop();
+        });
       }
     }
 
