@@ -28,7 +28,7 @@ Na tela Sobre, você encontrará informações sobre:
  Objetivo do Jogo
 
 O objetivo do jogo é simples:
-- **Marcar pontos para vencer cada fase.
+- Marcar pontos para vencer cada fase.
 - Evitar perder todas as vidas, cada vida perdida é um ponto para o adversario.
 
 
@@ -41,7 +41,7 @@ Como Jogar
 - Evite deixar a bola passar pela sua raquete!
 
 
-#Progresso
+Progresso
 
 O jogo é dividido em fases. Cada fase possui dificuldade crescente, com a IA adversária se movendo mais rápido e a bola ficando mais veloz.
 
