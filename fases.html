@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fases - Dig.Mi Padel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fases.css">
+</head>
+<body>
+
+  <a href="nome.html" class="back-button" title="Voltar">&larr; Voltar</a>
+
+  <div class="header">
+    <h1>Escolha a Fase</h1>
+  </div>
+
+  <div class="fase-grid">
+    <button class="fase-button" data-fase="1">Fase 1</button>
+    <button class="fase-button bloqueada" disabled data-fase="2">🔒</button>
+    <button class="fase-button bloqueada" disabled data-fase="3">🔒</button>
+    <button class="fase-button bloqueada" disabled data-fase="4">🔒</button>
+    <button class="fase-button bloqueada" disabled data-fase="5">🔒</button>
+  </div>
+
+  <script>
+    const fasesDesbloqueadas = parseInt(localStorage.getItem('faseMaisAvancada')) || 1;
+
+    document.querySelectorAll('.fase-button').forEach(btn => {
+      const numero = parseInt(btn.dataset.fase);
+
+      if (numero <= fasesDesbloqueadas) {
+        btn.classList.remove('bloqueada');
+        btn.disabled = false;
+        btn.textContent = `Fase ${numero}`;
+        btn.addEventListener('click', () => {
+          window.location.href = `fase${numero}.html`;
+        });
+      } else {
+        btn.classList.add('bloqueada');
+        btn.disabled = true;
+        btn.textContent = '🔒';
+      }
+    });
+  </script>
+
+</body>
+</html>

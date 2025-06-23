@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fase 4 - Dig.Mi Padel</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #1b262c;
+      height: 100%;
+      width: 100%;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #hud {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      z-index: 11;
+      display: flex;
+      justify-content: space-between;
+      width: 60%;
+    }
+
+    #backBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 30px;
+      font-size: 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background-color: #e63946;
+      color: white;
+      z-index: 11;
+    }
+
+    #mensagem {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: bold;
+      color: white;
+      background-color: rgba(0,0,0,0.7);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 12;
+    }
+
+    #bgmToggle {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      z-index: 12;
+      padding: 10px 15px;
+      background-color: #457b9d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div>PONTOS: <span id="score">0</span></div>
+    <div>VIDAS: <span id="vidas">2</span></div>
+    <div>FASE: 4</div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+  <div id="mensagem">Preparar...</div>
+  <button id="bgmToggle">🎵 Música: ON</button>
+  <button id="backBtn">Voltar para fases</button>
+
+  <audio id="somRaquete" src="assets/raquete.mp3"></audio>
+  <audio id="somPonto" src="assets/ponto.mp3"></audio>
+  <audio id="somErro" src="assets/perda.mp3"></audio>
+  <audio id="bgm" src="assets/bmg.mp3" loop></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const vidasDisplay = document.getElementById('vidas');
+    const mensagem = document.getElementById('mensagem');
+    const somRaquete = document.getElementById('somRaquete');
+    const somPonto = document.getElementById('somPonto');
+    const somErro = document.getElementById('somErro');
+    const bgm = document.getElementById('bgm');
+    const bgmToggle = document.getElementById('bgmToggle');
+    const backBtn = document.getElementById('backBtn');
+
+    backBtn.onclick = () => window.location.href = 'fases.html';
+
+    let musicaIniciada = false;
+    bgm.volume = 0.5;
+
+    bgmToggle.onclick = () => {
+      if (!musicaIniciada) {
+        bgm.play();
+        musicaIniciada = true;
+        bgmToggle.textContent = '🎵 Música: ON';
+        return;
+      }
+      if (bgm.paused) {
+        bgm.play();
+        bgmToggle.textContent = '🎵 Música: ON';
+      } else {
+        bgm.pause();
+        bgmToggle.textContent = '🎵 Música: OFF';
+      }
+    };
+
+    function ajustarTamanho() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    ajustarTamanho();
+    window.addEventListener('resize', ajustarTamanho);
+
+    class Raquete {
+      constructor(x, y, angulo = 0) {
+        this.x = x;
+        this.y = y;
+        this.largura = 40;
+        this.altura = 130;
+        this.img = new Image();
+        this.img.src = 'assets/raquete.png';
+        this.speed = 7;
+        this.angulo = angulo;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x + this.largura / 2, this.y + this.altura / 2);
+        ctx.rotate(this.angulo);
+        ctx.drawImage(this.img, -this.largura / 2, -this.altura / 2, this.largura, this.altura);
+        ctx.restore();
+      }
+
+      move(dir, limites) {
+        this.y += dir * this.speed;
+        if (this.y < limites.topo) this.y = limites.topo;
+        if (this.y + this.altura > limites.base) this.y = limites.base - this.altura;
+      }
+
+      moverIA(bolaY, limites) {
+        let centroRaquete = this.y + this.altura / 2;
+        if (centroRaquete < bolaY - 3) this.move(1, limites);
+        else if (centroRaquete > bolaY + 3) this.move(-1, limites);
+      }
+    }
+
+    class Bola {
+      constructor(x, y, raio) {
+        this.x = x;
+        this.y = y;
+        this.raio = raio;
+        this.speedX = -9;
+        this.speedY = 6 * (Math.random() > 0.5 ? 1 : -1);
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.raio, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      update(limites) {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (this.y - this.raio < limites.topo || this.y + this.raio > limites.base) {
+          this.speedY *= -1;
+        }
+      }
+    }
+
+    class Jogo {
+      constructor() {
+        this.margem = 100;
+        this.limitesQuadra = {
+          topo: this.margem,
+          base: canvas.height - this.margem,
+          esquerda: this.margem,
+          direita: canvas.width - this.margem
+        };
+
+        this.raquete = new Raquete(80, canvas.height / 2 - 60, -Math.PI / 6);
+        this.raqueteAdversario = new Raquete(canvas.width - 120, canvas.height / 2 - 60, Math.PI / 6);
+        this.raqueteAdversario.speed = 4;
+
+        this.bola = new Bola(canvas.width / 2, canvas.height / 2, 8);
+        this.score = 0;
+        this.vidas = 2;
+        this.jogando = true;
+
+        this.quadraImg = new Image();
+        this.quadraImg.src = 'assets/quadra1.PNG';
+
+        this.up = false;
+        this.down = false;
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'ArrowUp') this.up = true;
+          if (e.code === 'ArrowDown') this.down = true;
+        });
+        window.addEventListener('keyup', (e) => {
+          if (e.code === 'ArrowUp') this.up = false;
+          if (e.code === 'ArrowDown') this.down = false;
+        });
+      }
+
+      reiniciarComDelay() {
+        this.jogando = false;
+        mensagem.style.display = 'block';
+        setTimeout(() => {
+          mensagem.style.display = 'none';
+          this.bola = new Bola(canvas.width / 2, canvas.height / 2, 8);
+          this.jogando = true;
+          this.loop();
+        }, 1000);
+      }
+
+      atualizar() {
+        if (!this.jogando) return;
+
+        if (this.up) this.raquete.move(-1, this.limitesQuadra);
+        if (this.down) this.raquete.move(1, this.limitesQuadra);
+
+        this.bola.update(this.limitesQuadra);
+        this.raqueteAdversario.moverIA(this.bola.y, this.limitesQuadra);
+
+        if (
+          this.bola.x - this.bola.raio <= this.raquete.x + this.raquete.largura &&
+          this.bola.y > this.raquete.y &&
+          this.bola.y < this.raquete.y + this.raquete.altura
+        ) {
+          this.bola.speedX = -this.bola.speedX;
+          somRaquete.play();
+        }
+
+        if (
+          this.bola.x + this.bola.raio >= this.raqueteAdversario.x &&
+          this.bola.y > this.raqueteAdversario.y &&
+          this.bola.y < this.raqueteAdversario.y + this.raqueteAdversario.altura
+        ) {
+          this.bola.speedX = -this.bola.speedX;
+          somRaquete.play();
+        }
+
+        if (this.bola.x - this.bola.raio > this.limitesQuadra.direita) {
+          this.score++;
+          scoreDisplay.textContent = this.score;
+          somPonto.play();
+          this.reiniciarComDelay();
+        }
+
+        if (this.bola.x + this.bola.raio < this.limitesQuadra.esquerda) {
+          this.vidas--;
+          vidasDisplay.textContent = this.vidas;
+          somErro.play();
+          if (this.vidas <= 0) {
+            this.jogando = false;
+            Swal.fire({
+              title: 'Game Over',
+              text: 'Você perdeu todas as vidas!',
+              icon: 'error',
+              confirmButtonText: 'Tentar novamente'
+            }).then(() => window.location.href = 'fases.html');
+          } else {
+            this.reiniciarComDelay();
+          }
+        }
+
+        if (this.score >= 8) {
+          this.jogando = false;
+          Swal.fire({
+            title: 'Parabéns!',
+            text: 'Você completou a Fase 4!',
+            icon: 'success',
+            confirmButtonText: 'Ir para Fase 5'
+          }).then(() => {
+            localStorage.setItem('faseMaisAvancada', '5');
+            window.location.href = 'fase5.html';
+          });
+        }
+      }
+
+      desenhar() {
+        ctx.drawImage(this.quadraImg, 0, 0, canvas.width, canvas.height);
+        this.raquete.draw();
+        this.raqueteAdversario.draw();
+        this.bola.draw();
+      }
+
+      loop() {
+        this.atualizar();
+        this.desenhar();
+        if (this.jogando) requestAnimationFrame(() => this.loop());
+      }
+
+      iniciar() {
+        Promise.all([
+          new Promise(res => this.raquete.img.onload = res),
+          new Promise(res => this.raqueteAdversario.img.onload = res),
+          new Promise(res => this.quadraImg.onload = res)
+        ]).then(() => this.loop());
+      }
+    }
+
+    const jogo = new Jogo();
+    jogo.iniciar();
+  </script>
+</body>
+</html>
